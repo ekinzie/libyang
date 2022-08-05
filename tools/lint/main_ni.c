@@ -67,6 +67,12 @@ struct context {
     const struct lysc_node *schema_node;
     const char *submodule;
 
+    /* name of file containing explicit context passed to callback
+     * for schema-mount extension.  This also causes a callback to
+     * be registered.
+     */
+    const char *schema_context_filename;
+
     /* value of --format in case of schema format */
     LYS_OUTFORMAT schema_out_format;
 
@@ -189,6 +195,10 @@ help(int shortout)
 
     printf("  -s SUBMODULE, --submodule=SUBMODULE\n"
             "                Print the specific submodule instead of the main module.\n\n");
+
+    printf("  -S CONTEXT\n"
+            "                Name of a file containing an XML schema context to be passed to\n"
+            "                the schema-mount extension.\n\n");
 
     printf("  -n, --not-strict\n"
             "                Do not require strict data parsing (silently skip unknown data),\n"
@@ -313,6 +323,24 @@ get_features_not_applied(const struct ly_set *fset)
     }
 
     return NULL;
+}
+
+static LY_ERR
+ext_data_clb(const struct lysc_ext_instance *ext, void *user_data, void **ext_data, ly_bool *ext_data_free)
+{
+    struct context *c = user_data;
+    struct lyd_node *data = NULL;
+
+    (void)ext;
+
+    if (user_data) {
+        lyd_parse_data_path(c->ctx, c->schema_context_filename, LYD_XML,
+                            LYD_PARSE_STRICT, LYD_VALIDATE_PRESENT, &data);
+    }
+
+    *ext_data = data;
+    *ext_data_free = 1;
+    return LY_SUCCESS;
 }
 
 static int
@@ -493,6 +521,7 @@ fill_context(int argc, char *argv[], struct context *c)
         {"schema-node",       required_argument, NULL, 'P'},
         {"single-node",       no_argument,       NULL, 'q'},
         {"submodule",         required_argument, NULL, 's'},
+        {"schema-context",    required_argument, NULL, 'S'},
         {"not-strict",        no_argument,       NULL, 'n'},
         {"present",           no_argument,       NULL, 'e'},
         {"type",              required_argument, NULL, 't'},
@@ -518,9 +547,9 @@ fill_context(int argc, char *argv[], struct context *c)
 
     opterr = 0;
 #ifndef NDEBUG
-    while ((opt = getopt_long(argc, argv, "hvVQf:p:DF:iP:qs:net:d:lL:o:O:R:myY:G:", options, &opt_index)) != -1)
+    while ((opt = getopt_long(argc, argv, "hvVQf:p:DF:iP:qs:net:d:lL:o:O:R:myY:S:G:", options, &opt_index)) != -1)
 #else
-    while ((opt = getopt_long(argc, argv, "hvVQf:p:DF:iP:qs:net:d:lL:o:O:R:myY:", options, &opt_index)) != -1)
+    while ((opt = getopt_long(argc, argv, "hvVQf:p:DF:iP:qs:net:d:lL:o:O:R:myY:S:", options, &opt_index)) != -1)
 #endif
     {
         switch (opt) {
@@ -639,6 +668,10 @@ fill_context(int argc, char *argv[], struct context *c)
 
         case 's': /* --submodule */
             c->submodule = optarg;
+            break;
+
+        case 'S': /* --schema-context */
+            c->schema_context_filename = optarg;
             break;
 
         case 'n': /* --not-strict */
@@ -840,6 +873,13 @@ fill_context(int argc, char *argv[], struct context *c)
     ret = fill_context_inputs(argc, argv, c);
     if (ret) {
         return ret;
+    }
+
+    if (c->schema_context_filename) {
+        if (ly_ctx_set_ext_data_clb(c->ctx, ext_data_clb, c)) {
+            YLMSG_E("Unable to set extension callback data.\n");
+            return -1;
+        }
     }
 
     /* the second batch of checks */
