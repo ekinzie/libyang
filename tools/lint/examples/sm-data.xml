@@ -1,0 +1,9 @@
+<root2 xmlns="urn:sm">
+  <interfaces xmlns="urn:ietf:params:xml:ns:yang:ietf-interfaces">
+    <interface>
+      <name>bu</name>
+      <type xmlns:ii="urn:ietf:params:xml:ns:yang:iana-if-type">ii:ethernetCsmacd</type>
+    </interface>
+  </interfaces>
+</root2>
+
