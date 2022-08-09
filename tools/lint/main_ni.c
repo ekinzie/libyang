@@ -382,6 +382,13 @@ fill_context_inputs(int argc, char *argv[], struct context *c)
         }
     }
 
+    if (c->schema_context_filename) {
+        if (ly_ctx_set_ext_data_clb(c->ctx, ext_data_clb, c)) {
+            YLMSG_E("Unable to set extension callback data.\n");
+            return -1;
+        }
+    }
+
     /* process the operational and/or reply RPC content if any */
     if (c->data_operational.path) {
         if (get_input(c->data_operational.path, NULL, &c->data_operational.format, &c->data_operational.in)) {
@@ -873,13 +880,6 @@ fill_context(int argc, char *argv[], struct context *c)
     ret = fill_context_inputs(argc, argv, c);
     if (ret) {
         return ret;
-    }
-
-    if (c->schema_context_filename) {
-        if (ly_ctx_set_ext_data_clb(c->ctx, ext_data_clb, c)) {
-            YLMSG_E("Unable to set extension callback data.\n");
-            return -1;
-        }
     }
 
     /* the second batch of checks */
