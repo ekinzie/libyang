@@ -390,7 +390,8 @@ cleanup:
 }
 
 LIBYANG_API_DEF LY_ERR
-ly_ctx_new_ylpath(const char *search_dir, const char *path, LYD_FORMAT format, int options, struct ly_ctx **ctx)
+ly_ctx_new_ylpath_ext(const char *search_dir, const char *path, LYD_FORMAT format, int options, struct ly_ctx **ctx,
+                      ly_ext_data_clb ext_clb, void *ext_clb_data)
 {
     LY_ERR ret = LY_SUCCESS;
     struct ly_ctx *ctx_yl = NULL;
@@ -405,7 +406,7 @@ ly_ctx_new_ylpath(const char *search_dir, const char *path, LYD_FORMAT format, i
     LY_CHECK_GOTO(ret = lyd_parse_data_path(ctx_yl, path, format, 0, LYD_VALIDATE_PRESENT, &data_yl), cleanup);
 
     /* create the new context */
-    ret = ly_ctx_new_yldata(search_dir, data_yl, options, ctx);
+    ret = ly_ctx_new_yldata_ext(search_dir, data_yl, options, ctx, ext_clb, ext_clb_data);
 
 cleanup:
     lyd_free_all(data_yl);
@@ -414,7 +415,14 @@ cleanup:
 }
 
 LIBYANG_API_DEF LY_ERR
-ly_ctx_new_ylmem(const char *search_dir, const char *data, LYD_FORMAT format, int options, struct ly_ctx **ctx)
+ly_ctx_new_ylpath(const char *search_dir, const char *path, LYD_FORMAT format, int options, struct ly_ctx **ctx)
+{
+    return ly_ctx_new_ylpath_ext(search_dir, path, format, options, ctx, NULL, NULL);
+}
+
+LIBYANG_API_DEF LY_ERR
+ly_ctx_new_ylmem_ext(const char *search_dir, const char *data, LYD_FORMAT format, int options, struct ly_ctx **ctx,
+                      ly_ext_data_clb ext_clb, void *ext_clb_data)
 {
     LY_ERR ret = LY_SUCCESS;
     struct ly_ctx *ctx_yl = NULL;
@@ -429,7 +437,7 @@ ly_ctx_new_ylmem(const char *search_dir, const char *data, LYD_FORMAT format, in
     LY_CHECK_GOTO(ret = lyd_parse_data_mem(ctx_yl, data, format, 0, LYD_VALIDATE_PRESENT, &data_yl), cleanup);
 
     /* create the new context */
-    ret = ly_ctx_new_yldata(search_dir, data_yl, options, ctx);
+    ret = ly_ctx_new_yldata_ext(search_dir, data_yl, options, ctx, ext_clb, ext_clb_data);
 
 cleanup:
     lyd_free_all(data_yl);
@@ -438,7 +446,14 @@ cleanup:
 }
 
 LIBYANG_API_DEF LY_ERR
-ly_ctx_new_yldata(const char *search_dir, const struct lyd_node *tree, int options, struct ly_ctx **ctx)
+ly_ctx_new_ylmem(const char *search_dir, const char *data, LYD_FORMAT format, int options, struct ly_ctx **ctx)
+{
+    return ly_ctx_new_ylmem_ext(search_dir, data, format, options, ctx, NULL, NULL);
+}
+
+LIBYANG_API_DEF LY_ERR
+ly_ctx_new_yldata_ext(const char *search_dir, const struct lyd_node *tree, int options, struct ly_ctx **ctx,
+                      ly_ext_data_clb ext_clb, void *ext_clb_data)
 {
     const char *name = NULL, *revision = NULL;
     struct lyd_node *module, *node;
@@ -455,6 +470,9 @@ ly_ctx_new_yldata(const char *search_dir, const struct lyd_node *tree, int optio
 
     /* create a new context */
     LY_CHECK_GOTO(ret = ly_ctx_new(search_dir, options, &ctx_new), cleanup);
+
+    if (ext_clb && ext_clb_data)
+        ly_ctx_set_ext_data_clb(ctx_new, ext_clb, ext_clb_data);
 
     /* redundant to compile modules one-by-one */
     if (!(options & LY_CTX_EXPLICIT_COMPILE)) {
@@ -525,6 +543,12 @@ cleanup:
         *ctx = NULL;
     }
     return ret;
+}
+
+LIBYANG_API_DEF LY_ERR
+ly_ctx_new_yldata(const char *search_dir, const struct lyd_node *tree, int options, struct ly_ctx **ctx)
+{
+    return ly_ctx_new_yldata_ext(search_dir, tree, options, ctx, NULL, NULL);
 }
 
 LIBYANG_API_DEF LY_ERR
