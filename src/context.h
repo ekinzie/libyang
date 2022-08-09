@@ -200,6 +200,18 @@ struct ly_ctx;
 /** @} contextoptions */
 
 /**
+ * @brief Callback for getting arbitrary run-time data required by an extension instance.
+ *
+ * @param[in] ext Compiled extension instance.
+ * @param[in] user_data User-supplied callback data.
+ * @param[out] ext_data Provided extension instance data.
+ * @param[out] ext_data_free Whether the extension instance should free @p ext_data or not.
+ * @return LY_ERR value.
+ */
+typedef LY_ERR (*ly_ext_data_clb)(const struct lysc_ext_instance *ext, void *user_data, void **ext_data,
+        ly_bool *ext_data_free);
+
+/**
  * @brief Create libyang context.
  *
  * Context is used to hold all information about schemas. Usually, the application is supposed
@@ -241,6 +253,31 @@ LIBYANG_API_DECL LY_ERR ly_ctx_new(const char *search_dir, uint16_t options, str
  * @param[in] path Path to the file containing yang-library-data in the specified format
  * @param[in] format Format of the data in the provided file.
  * @param[in] options Context options, see @ref contextoptions.
+ * @param[in] ext_clb Extension callback function pointer
+ * @param[in] ext_clb_data Data passed to extension callback function
+ * @param[out] ctx Pointer to the created libyang context if LY_SUCCESS returned.
+ * @return LY_ERR return value
+ */
+LIBYANG_API_DECL LY_ERR ly_ctx_new_ylpath_ext(const char *search_dir, const char *path, LYD_FORMAT format, int options,
+        struct ly_ctx **ctx, ly_ext_data_clb ext_clb, void *ext_clb_data);
+/**
+ * @brief Create libyang context according to the provided yang-library data in a file.
+ *
+ * This function loads the yang-library data from the given path. If you need to pass the data as
+ * string, use ::::ly_ctx_new_ylmem(). Both functions extend functionality of ::ly_ctx_new() by loading
+ * modules specified in the ietf-yang-library form into the context being created.
+ * The preferred tree model revision is 2019-01-04. However, only the first module-set is processed and loaded
+ * into the context. If there are no matching nodes from this tree, the legacy tree (originally from model revision 2016-04-09)
+ * is processed. Note, that the modules are loaded the same way as in case of ::ly_ctx_load_module(), so the schema paths in the
+ * yang-library data are ignored and the modules are loaded from the context's search locations. On the other hand, YANG features
+ * of the modules are set as specified in the yang-library data.
+ * To get yang library data from a libyang context, use ::ly_ctx_get_yanglib_data().
+ *
+ * @param[in] search_dir Directory where libyang will search for the imported or included modules and submodules.
+ * If no such directory is available, NULL is accepted.
+ * @param[in] path Path to the file containing yang-library-data in the specified format
+ * @param[in] format Format of the data in the provided file.
+ * @param[in] options Context options, see @ref contextoptions.
  * @param[out] ctx Pointer to the created libyang context if LY_SUCCESS returned.
  * @return LY_ERR return value
  */
@@ -257,11 +294,46 @@ LIBYANG_API_DECL LY_ERR ly_ctx_new_ylpath(const char *search_dir, const char *pa
  * @param[in] data String containing yang-library data in the specified format.
  * @param[in] format Format of the data in the provided file.
  * @param[in] options Context options, see @ref contextoptions.
+ * @param[in] ext_clb Extension callback function pointer
+ * @param[in] ext_clb_data Data passed to extension callback function
+ * @param[out] ctx Pointer to the created libyang context if LY_SUCCESS returned.
+ * @return LY_ERR return value
+ */
+LIBYANG_API_DECL LY_ERR ly_ctx_new_ylmem_ext(const char *search_dir, const char *data, LYD_FORMAT format, int options,
+        struct ly_ctx **ctx, ly_ext_data_clb ext_clb, void *ext_clb_data);
+
+/**
+ * @brief Create libyang context according to the provided yang-library data in a string.
+ *
+ * Details in ::ly_ctx_new_ylpath().
+ *
+ * @param[in] search_dir Directory where libyang will search for the imported or included modules and submodules.
+ * If no such directory is available, NULL is accepted.
+ * @param[in] data String containing yang-library data in the specified format.
+ * @param[in] format Format of the data in the provided file.
+ * @param[in] options Context options, see @ref contextoptions.
  * @param[out] ctx Pointer to the created libyang context if LY_SUCCESS returned.
  * @return LY_ERR return value
  */
 LIBYANG_API_DECL LY_ERR ly_ctx_new_ylmem(const char *search_dir, const char *data, LYD_FORMAT format, int options,
         struct ly_ctx **ctx);
+
+/**
+ * @brief Create libyang context according to the provided yang-library data in a data tree.
+ *
+ * Details in ::ly_ctx_new_ylpath().
+ *
+ * @param[in] search_dir Directory where libyang will search for the imported or included modules and submodules.
+ * If no such directory is available, NULL is accepted.
+ * @param[in] tree Data tree containing yang-library data.
+ * @param[in] options Context options, see @ref contextoptions.
+ * @param[in] ext_clb Extension callback function pointer
+ * @param[in] ext_clb_data Data passed to extension callback function
+ * @param[out] ctx Pointer to the created libyang context if LY_SUCCESS returned.
+ * @return LY_ERR return value
+ */
+LIBYANG_API_DECL LY_ERR ly_ctx_new_yldata_ext(const char *search_dir, const struct lyd_node *tree, int options,
+        struct ly_ctx **ctx, ly_ext_data_clb ext_clb, void *ext_clb_data);
 
 /**
  * @brief Create libyang context according to the provided yang-library data in a data tree.
@@ -418,18 +490,6 @@ LIBYANG_API_DECL ly_module_imp_clb ly_ctx_get_module_imp_clb(const struct ly_ctx
  * @param[in] user_data Arbitrary data that will always be passed to the callback @p clb.
  */
 LIBYANG_API_DECL void ly_ctx_set_module_imp_clb(struct ly_ctx *ctx, ly_module_imp_clb clb, void *user_data);
-
-/**
- * @brief Callback for getting arbitrary run-time data required by an extension instance.
- *
- * @param[in] ext Compiled extension instance.
- * @param[in] user_data User-supplied callback data.
- * @param[out] ext_data Provided extension instance data.
- * @param[out] ext_data_free Whether the extension instance should free @p ext_data or not.
- * @return LY_ERR value.
- */
-typedef LY_ERR (*ly_ext_data_clb)(const struct lysc_ext_instance *ext, void *user_data, void **ext_data,
-        ly_bool *ext_data_free);
 
 /**
  * @brief Set callback providing run-time extension instance data. The expected data depend on the extension.
