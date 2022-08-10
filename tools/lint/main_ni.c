@@ -328,14 +328,12 @@ get_features_not_applied(const struct ly_set *fset)
 static LY_ERR
 ext_data_clb(const struct lysc_ext_instance *ext, void *user_data, void **ext_data, ly_bool *ext_data_free)
 {
-    struct context *c = user_data;
+    struct ly_ctx *ctx;
     struct lyd_node *data = NULL;
 
-    (void)ext;
-
+    ctx = ext->module->ctx;
     if (user_data) {
-        lyd_parse_data_path(c->ctx, c->schema_context_filename, LYD_XML,
-                            LYD_PARSE_STRICT, LYD_VALIDATE_PRESENT, &data);
+        lyd_parse_data_path(ctx, user_data, LYD_XML, LYD_PARSE_STRICT, LYD_VALIDATE_PRESENT, &data);
     }
 
     *ext_data = data;
@@ -360,7 +358,8 @@ fill_context_inputs(int argc, char *argv[], struct context *c)
         ly_set_erase(&c->schema_features, free_features);
 
         /* create context from the yang-library file */
-        if (ly_ctx_new_ylpath(searchdir, c->yang_lib_file, LYD_UNKNOWN, c->ctx_options, &c->ctx)) {
+        if (ly_ctx_new_ylpath_ext(searchdir, c->yang_lib_file, LYD_UNKNOWN, c->ctx_options, &c->ctx,
+                                  ext_data_clb, c->schema_context_filename)) {
             YLMSG_E("Unable to create libyang context from yang-library data.\n");
             return -1;
         }
@@ -376,18 +375,19 @@ fill_context_inputs(int argc, char *argv[], struct context *c)
             return -1;
         }
 
+        if (c->schema_context_filename) {
+            if (ly_ctx_set_ext_data_clb(c->ctx, ext_data_clb, c->schema_context_filename)) {
+                YLMSG_E("Unable to set extension callback data.\n");
+                return -1;
+            }
+        }
+
         /* set the rest of searchdirs */
         for (uint32_t i = 1; i < c->searchpaths.count; ++i) {
             ly_ctx_set_searchdir(c->ctx, c->searchpaths.objs[i]);
         }
     }
 
-    if (c->schema_context_filename) {
-        if (ly_ctx_set_ext_data_clb(c->ctx, ext_data_clb, c)) {
-            YLMSG_E("Unable to set extension callback data.\n");
-            return -1;
-        }
-    }
 
     /* process the operational and/or reply RPC content if any */
     if (c->data_operational.path) {
