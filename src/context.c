@@ -470,12 +470,8 @@ ly_ctx_new_yldata_ext(const char *search_dir, const struct lyd_node *tree, int o
     /* create a new context */
     LY_CHECK_GOTO(ret = ly_ctx_new(search_dir, options, &ctx_new), cleanup);
 
-    if (ext_clb && ext_clb_data) {
-        if (ly_ctx_set_ext_data_clb(ctx_new, ext_clb, ext_clb_data) == NULL) {
-            ret = LY_EINVAL;
-            goto cleanup;
-        }
-    }
+    if (ext_clb && ext_clb_data)
+        ly_ctx_set_ext_data_clb(ctx_new, ext_clb, ext_clb_data);
 
     /* redundant to compile modules one-by-one */
     if (!(options & LY_CTX_EXPLICIT_COMPILE)) {
