@@ -71,7 +71,7 @@ struct context {
      * for schema-mount extension.  This also causes a callback to
      * be registered.
      */
-    const char *schema_context_filename;
+    char *schema_context_filename;
 
     /* value of --format in case of schema format */
     LYS_OUTFORMAT schema_out_format;
@@ -117,6 +117,9 @@ erase_context(struct context *c)
 
     ly_out_free(c->out, NULL,  0);
     ly_ctx_destroy(c->ctx);
+
+    if (c->schema_context_filename)
+        free(c->schema_context_filename);
 }
 
 static void
@@ -678,7 +681,7 @@ fill_context(int argc, char *argv[], struct context *c)
             break;
 
         case 'S': /* --schema-context */
-            c->schema_context_filename = optarg;
+            c->schema_context_filename = strdup(optarg);
             break;
 
         case 'n': /* --not-strict */
