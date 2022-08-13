@@ -851,7 +851,8 @@ const struct lyplg_ext_record plugins_schema_mount[] = {
         .plugin.sprinter = NULL,
         .plugin.free = &schema_mount_free,
         .plugin.snode = &schema_mount_snode,
-        .plugin.validate = &schema_mount_validate
+        .plugin.validate = &schema_mount_validate,
+        .plugin.context = &schema_mount_get_ctx
     },
     {0} /* terminating zeroed item */
 };

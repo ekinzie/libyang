@@ -201,6 +201,16 @@ typedef LY_ERR (*lyplg_ext_data_validate_clb)(struct lysc_ext_instance *ext, str
         const struct lyd_node *dep_tree, enum lyd_type data_type, uint32_t val_opts, struct lyd_node **diff);
 
 /**
+ * @brief Callback to fetch a extension instance's context.
+ *
+ * @param[in] ext Compiled extension instance.
+ * @param[out] ext_ctx Context for this instance.
+ * @return LY_SUCCESS if context found.
+ * @return LY_ERR otherwise.
+ */
+typedef LY_ERR (*lyplg_ext_get_context_clb)(struct lysc_ext_instance *ext, const struct ly_ctx **ext_ctx);
+
+/**
  * @brief Extension plugin implementing various aspects of a YANG extension
  */
 struct lyplg_ext {
@@ -214,6 +224,7 @@ struct lyplg_ext {
     lyplg_ext_data_snode_clb snode;         /**< callback to get schema node for nested YANG data */
     lyplg_ext_data_validate_clb validate;   /**< callback to validate parsed data instances according to the extension
                                                  definition */
+    lyplg_ext_get_context_clb context;      /**< callback to get extension instance context */
 };
 
 struct lyplg_ext_record {

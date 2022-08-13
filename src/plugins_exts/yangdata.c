@@ -175,7 +175,8 @@ const struct lyplg_ext_record plugins_yangdata[] = {
         .plugin.sprinter = &yangdata_schema_printer,
         .plugin.free = yangdata_free,
         .plugin.snode = NULL,
-        .plugin.validate = NULL
+        .plugin.validate = NULL,
+        .plugin.context = NULL,
     },
     {0}     /* terminating zeroed record */
 };
