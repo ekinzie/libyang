@@ -299,6 +299,7 @@ ly_ctx_new(const char *search_dir, uint16_t options, struct ly_ctx **new_ctx)
             imp_f = (ctx->flags & LY_CTX_ENABLE_IMP_FEATURES) ? all_f : NULL;
             LY_CHECK_GOTO(rc = lys_implement(module, imp_f, &unres), cleanup);
         }
+	module->internal = 1;
     }
 
     if (!(options & LY_CTX_EXPLICIT_COMPILE)) {
