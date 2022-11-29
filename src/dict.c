@@ -116,18 +116,18 @@ lydict_remove(struct ly_ctx *ctx, const char *value)
     uint32_t index;
     struct dict_rec *record, *prev = NULL;
 
-    if (!value || !ctx) {
+    if (!value || !ctx || !ctx->dict) {
         return;
     }
 
     len = strlen(value);
 
+    pthread_mutex_lock(&ctx->dict.lock);
+
     if (!ctx->dict.used) {
         pthread_mutex_unlock(&ctx->dict.lock);
         return;
     }
-
-    pthread_mutex_lock(&ctx->dict.lock);
 
     index = dict_hash(value, len) & ctx->dict.hash_mask;
     record = &ctx->dict.recs[index];
