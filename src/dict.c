@@ -116,7 +116,7 @@ lydict_remove(struct ly_ctx *ctx, const char *value)
     uint32_t index;
     struct dict_rec *record, *prev = NULL;
 
-    if (!value || !ctx || !ctx->dict) {
+    if (!value || !ctx) {
         return;
     }
 
